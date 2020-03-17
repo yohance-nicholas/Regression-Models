@@ -13,7 +13,7 @@ Exploratory data analyses and regression models are utilised to mainly explore t
 1. Is an automatic or manual transmission better for MPG? 
 2. Quantify the MPG difference between automatic and manual transmissions"
 
-## Contents of the repository
+## Contents 
 This repository contains the following files:
 
 - `README.md`- which provides an overview of the dataset and how it was created
