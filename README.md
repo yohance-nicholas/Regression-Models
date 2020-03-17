@@ -1,4 +1,4 @@
-# Regression-Models
+# Peer-graded Assignment: Regression Models Course Project
 
 ## Overview
 This repo was prepared by Yohance Nicholas in partial fulfilment of the [Regression Models Course](https://www.coursera.org/learn/regression-models/home/welcome) which comprises one of the five courses necessary for the Data Science: Statistics and Machine Specialization offered by Johns Hopikins University through Coursera. 
