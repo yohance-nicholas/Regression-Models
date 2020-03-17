@@ -1,0 +1,221 @@
+---
+title: "Exploring the Relationship between Car Characteristics and Fuel Efficiency"
+author: "Yohance Nicholas"
+date: "3/15/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Executive Summary
+This report was prepared by Yohance Nicholas in partial fulfilment of the [Regression Models Course](https://www.coursera.org/learn/regression-models/home/welcome) which comprises one of the five courses necessary for the Data Science: Statistics and Machine Specialization offered by Johns Hopikins University through Coursera. In this report, candidates wear the hat of a *Motor Trend Researcher* who seeks to explore the relationship between vehicle characteristics and fuel efficiency with the assistance of the `mtcars` data set. 
+  
+This data, which was extracted from the 1974 *Motor Trend* US magazine, comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). Exploratory data analyses and regression models are utilised to mainly explore the extent to which  **automatic** (am = 0) and **manual** (am = 1) transmissions features impact fuel efficiency, as measured by the the Miles/(US) gallon variable - **MPG** . 
+
+The research begins with data preparation and exploratory data analysis. Subsequently, several candidate linear regression models are estimated in order to identify the model with the best fit - i.e. the highest Adjusted R-squared value. 
+
+## Research Questions
+They are particularly interested in the following two questions:
+
+1. “Is an automatic or manual transmission better for MPG?”
+2. "Quantify the MPG difference between automatic and manual transmissions"
+
+## Description of the Dataset
+
+The `mtcars` data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). The data frame contains 32 observations on 11 (numeric) variables; namely:
+
+- **mpg**	Miles/(US) gallon
+- **cyl**	Number of cylinders
+- **disp**	Displacement (cu.in.)
+- **hp**	Gross horsepower
+- **drat**	Rear axle ratio
+- **wt**	Weight (1000 lbs)
+- **qsec**	1/4 mile time
+- **vs**	Engine (0 = V-shaped, 1 = straight)
+- **am**	Transmission (0 = automatic, 1 = manual)
+- **gear**	Number of forward gears
+- **carb**	Number of carburetors
+ 
+```{r include=FALSE}
+# Create Function For Automatic Naming of Plots ---------------------------
+fname = function(basename = 'Regression Models Courswork Plots', fileext = 'png'){
+  paste(basename, format(Sys.time(), " %b-%d-%Y %H-%M-%S."), fileext, sep="")
+}
+```
+ 
+ 
+## Load Data
+The data set is loaded and the necessary data transformations are done by factoring the necessary variables .
+
+```{r}
+data("mtcars")
+```
+
+The following tables and figures provide a description of the data set
+
+```{r message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(psych)
+library(knitr)
+library(kableExtra)
+library(broom)
+landscape(kable(describe(mtcars), caption="Descriptive Statistics of Motor Trend Data Set"))
+```
+# Exploratory Data Analysis
+We begin the analysis by performing some initial explaratory data analysis to get a better idea of the existing patterns between variables in the data set. Normally in regression analysis scatter plot is a very effective tool. Below we create a nice pairwise scatter plots which offer a convenien way to investigate the relationship between all the variables in this data set. 
+
+```{r include=FALSE}
+data("mtcars")
+library(GGally)
+library(ggplot2)
+ggpairs(mtcars, title = "Figure 1: Pairwise Scatter Plots of Variables in Dataset", lower=list(continuous="smooth"))
+```
+
+```{r include=FALSE}
+ggsave(fname(), scale = 2, dpi = 600)
+```
+
+```{r include=FALSE}
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$am <- factor(mtcars$am)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+```
+
+```{r}
+library(ggplot2)
+gg_boxplot <- ggplot(mtcars, 
+                     aes(x=factor(am), 
+                         y=mpg)) +
+  geom_boxplot() + 
+  labs(title="Figure 2: Box-plot Comparison of Auto Mileage by Transmission Type", 
+       y="Miles/(US) gallon", 
+       x="Transmission (0 = automatic, 1 = manual)")
+gg_boxplot
+```
+```{r include=FALSE}
+ggsave(fname(), dpi = 600)
+```
+# Empirical Results and Significant Findings
+
+## Estimation
+### Model 1: Univariate Regression Model
+
+```{r}
+univariate_model <- lm(mpg ~ am, mtcars)
+kable(tidy(univariate_model), caption="A simple linear 'mpg' model")
+par(mfrow = c(2, 2))
+plot(univariate_model)
+```
+```{r include=FALSE}
+library(export)
+graph2png(file = fname(), dpi = 600)
+```
+### Model 2: Multivariate Regression Model with All Available Variables
+
+```{r}
+multivariate_model <- lm(mpg ~ ., mtcars)
+kable(tidy(multivariate_model), caption= "A multiple regression model of the relationship between all available variables and 'mpg'")
+par(mfrow=c(2,2))
+plot(multivariate_model)
+```
+```{r include=FALSE}
+graph2png(file = fname(), dpi = 600)
+```
+### Model 3: Stepwise Regression Model
+```{r message=FALSE, warning=FALSE, include=FALSE}
+stepwise_model <- step(multivariate_model, k=log(nrow(mtcars)))
+```
+
+```{r}
+kable(tidy(stepwise_model), caption= "A stepwise regression model of the relationship between all available variables and 'mpg'")
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(stepwise_model)
+```
+
+```{r include=FALSE}
+graph2png(file = fname(), dpi = 600)
+```
+
+## Post-Estimation Diagnostics
+From the above plots, one can make the following observations:
+
+- The points in the Residuals vs. Fitted plot seem to be randomly scattered on the plot and verify the independence condition.
+- The Normal Q-Q plot consists of the points which mostly fall on the line indicating that the residuals are normally distributed.
+- The Scale-Location plot consists of points scattered in a constant band pattern, indicating constant variance.
+- There are some distinct points of interest (outliers or leverage points) in the top right of the plots.
+- We now compute some regression diagnostics of our model to find out these interesting leverage points as shown in the following section. We compute top three points in each case of influence measures.
+
+### Analysis of Variance (ANOVA): Univariate vs Multivariate vs Stepwise Model
+One can employ the Analysis of Variance to compare fitted regression models.
+
+```{r}
+anova_mtcars <- anova(univariate_model,multivariate_model, stepwise_model)
+kable(tidy(anova_mtcars))
+```
+
+As p-value is significant, hence the null hypothesis that the variables cyl, hp and wt do not contribute to the accuracy of the model is rejected.
+
+### Analysis of Variance (ANOVA): All other candidate models
+
+
+
+# Conclusions
+Based on the observations from our best fit model - the stepwise regression model - the following conclusions can be made:
+
+- Cars with Manual transmission get more miles per gallon compared aganist cars with Automatic transmission. (1.8 adjusted by *hp, cyl, and wt*). *mpg* will decrease by 2.5 (adjusted by *hp, cyl, and am*) for every 1000 lb increase in wt.
+- *mpg* decreases negligibly with increase of *hp.*
+- If number of cylinders, *cyl* increases from 4 to 6 and 8, *mpg* will decrease by a factor of 3 and 2.2 respectively (adjusted by *hp*, *wt*, and *am*).
+
+# Appendices
+### Appendix 1: Auto mileage by weight and horsepower
+```{r}
+ggplot(mtcars, 
+       aes(x = wt, 
+           y = mpg, 
+           size = hp)) +
+geom_point(alpha = .5, 
+           fill="cornflowerblue", 
+           color="black", 
+           shape=21) +
+scale_size_continuous(range = c(1, 14)) + 
+  labs(title = "Appendix 1: Auto mileage by weight and horsepower", 
+       subtitle = "Motor Trend US Magazine (1973-74 models)", 
+       x = "Weight (1000 lbs)", 
+       y = "Miles/(US) gallon", 
+       size = "Gross horsepower")
+```
+```{r include=FALSE}
+ggsave(fname(), dpi = 600)
+```
+### Appendix 2: Relationship between car weight and gas mileage
+```{r}
+mtcars %>%
+  ggplot(aes(wt, mpg)) +
+  geom_point() + 
+  stat_smooth(method = "lm") + 
+  ggtitle("Appendix 2: Relationship between car weight and gas mileage") +
+  xlab("Weight (1000 lbs)")
+```
+```{r include=FALSE}
+ggsave(fname(), dpi = 600)
+```
+### Appendix 3: Scatter Plot of MPG vs. Weight by Transmission
+```{r}
+ggplot(mtcars, aes(x=wt, y=mpg, group=am, color=am, height=3, width=3)) + geom_point() +  
+scale_colour_discrete(labels=c("Automatic", "Manual")) + 
+xlab("weight") + ggtitle("Appendix 3: Scatter Plot of MPG vs. Weight by Transmission")
+```
+```{r include=FALSE}
+ggsave(fname(), dpi = 600)
+```
